@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>搜索</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --accent: #00809d;
+      --text: #202124;
+      --muted: #737a80;
+      --border: #d8dce0;
+      --border-hover: #b9c0c6;
+      --shadow: rgba(0, 0, 0, 0.12);
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+    }
+    main { width: min(92vw, 720px); margin-top: -8vh; text-align: center; }
+    .clock {
+      margin-bottom: 30px;
+      color: #252a2e;
+      font-size: clamp(48px, 9vw, 76px);
+      font-weight: 300;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .date { margin: 10px 0 40px; color: #737a80; font-size: 16px; line-height: 1.5; }
+    .search-form {
+      width: 100%; height: 58px; display: flex; align-items: center; overflow: hidden;
+      border: 1px solid var(--border); border-radius: 30px; background: #fff;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .search-form:hover { border-color: var(--border-hover); box-shadow: 0 2px 8px var(--shadow); }
+    .search-form:focus-within { border-color: var(--accent); box-shadow: 0 2px 12px rgba(0, 128, 157, 0.18); }
+    .search-input {
+      flex: 1; min-width: 0; height: 100%; padding: 0 22px; border: 0; outline: 0;
+      background: transparent; color: var(--text); font-size: 17px;
+    }
+    .search-input::placeholder { color: #858b91; }
+    .search-button {
+      width: 58px; height: 58px; flex: 0 0 58px; display: grid; place-items: center;
+      border: 0; background: transparent; color: var(--accent); cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .search-button:hover { background: #f0f8fa; }
+    .search-button:focus-visible, .engine-button:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+    .search-icon { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+    .engine-switch {
+      display: inline-flex; align-items: center; gap: 4px; margin-top: 24px; padding: 4px;
+      border: 1px solid #e3e6e8; border-radius: 24px; background: #f7f8f9;
+    }
+    .engine-button {
+      min-width: 82px; height: 34px; padding: 0 14px; border: 0; border-radius: 18px;
+      background: transparent; color: var(--muted); font: inherit; font-size: 14px; cursor: pointer;
+      transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .engine-button[aria-pressed="true"] { background: #fff; color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
+    @media (max-width: 520px) {
+      main { width: calc(100vw - 32px); }
+      .clock { margin-bottom: 26px; }
+      .date { margin-bottom: 34px; }
+      .search-form { height: 54px; }
+      .search-button { width: 54px; height: 54px; flex-basis: 54px; }
+      .search-input { padding: 0 18px; font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="clock" id="clock" aria-label="当前时间">00:00:00</div>
+    <div class="date" id="date" aria-label="当前日期"></div>
+    <form id="search-form" class="search-form" action="https://www.bing.com/search" method="get" role="search">
+      <input id="search-input" class="search-input" type="search" name="q" placeholder="搜索网页" autocomplete="off" spellcheck="false" autofocus aria-label="搜索内容">
+      <button class="search-button" type="submit" aria-label="搜索">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="M16 16l5 5"></path></svg>
+      </button>
+    </form>
+    <div class="engine-switch" role="group" aria-label="选择搜索引擎">
+      <button class="engine-button" type="button" data-engine="bing" aria-pressed="true">Bing</button>
+      <button class="engine-button" type="button" data-engine="google" aria-pressed="false">Google</button>
+    </div>
+  </main>
+  <script>
+    const engines = {
+      bing: "https://www.bing.com/search",
+      google: "https://www.google.com/search"
+    };
+    const form = document.getElementById("search-form");
+    const buttons = [...document.querySelectorAll(".engine-button")];
+    let currentEngine = "bing";
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("clock").textContent = new Intl.DateTimeFormat("zh-CN", {
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+      }).format(now);
+      document.getElementById("date").textContent = new Intl.DateTimeFormat("zh-CN", {
+        year: "numeric", month: "long", day: "numeric", weekday: "long"
+      }).format(now);
+    }
+
+    function setEngine(engineName) {
+      if (!engines[engineName]) return;
+      currentEngine = engineName;
+      form.action = engines[engineName];
+      buttons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.engine === engineName));
+      });
+    }
+
+    buttons.forEach((button) => button.addEventListener("click", () => setEngine(button.dataset.engine)));
+    document.addEventListener("keydown", (event) => {
+      if (event.altKey && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+        event.preventDefault();
+        setEngine(currentEngine === "bing" ? "google" : "bing");
+        document.getElementById("search-input").focus();
+      }
+    });
+
+    updateClock();
+    setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>
